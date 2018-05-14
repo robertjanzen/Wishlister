@@ -1,7 +1,6 @@
 var steam = require("./steam")
 var sql = require("./sql_db.js")
 var gog = require("./gog.js")
-var server = require("./server.js")
 const _ = require('lodash');
 
 beforeAll(() => {
@@ -20,7 +19,6 @@ beforeAll(() => {
 
     return steam.steam(590380).then((result) => {
         steam_object = result;
-    }).then((result) => {
 
         mock_steam_obj =
         {
@@ -32,7 +30,6 @@ beforeAll(() => {
             "header_image": "https://steamcdn-a.akamaihd.net/steam/apps/590380/header.jpg?t=1519989363",
             "steam_appid": 590380
         }
-
         mock_gog_obj_1 =
         {
             customAttributes: [],
