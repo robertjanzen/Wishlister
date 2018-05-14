@@ -5,23 +5,10 @@ var server = require("./server.js")
 const _ = require('lodash');
 
 beforeAll(() => {
-
-    var sql_test = new Promise((resolve, reject) => {
-        sql.connection.query('START TRANSACTION;', function(err, result, fields) {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(result)
-            }
-        })
-    }).then((mysql_message) => {
-        console.log(mysql_message)
-    })
-
     return steam.steam(590380).then((result) => {
         steam_object = result;
+        return sql.fetch_wishlist(60);
     }).then((result) => {
-
         mock_steam_obj =
         {
             "name": "Into the Breach",
@@ -32,7 +19,6 @@ beforeAll(() => {
             "header_image": "https://steamcdn-a.akamaihd.net/steam/apps/590380/header.jpg?t=1519989363",
             "steam_appid": 590380
         }
-
         mock_gog_obj_1 =
         {
             customAttributes: [],
@@ -128,19 +114,8 @@ beforeAll(() => {
 })
 
 afterAll(() => {
-    var sql_test = new Promise((resolve, reject) => {
-        sql.connection.query('ROLLBACK;', function(err, result, fields) {
-            if (err) {
-                reject(err)
-            } else {
-                resolve(result)
-            }
-        })
-    })
-
-    sql_test.then((result) => {
-        console.log(result)
-    })
+    // Rebase Test - 1
+    // Rebase Test - 2
     sql.connection.end()
 })
 
