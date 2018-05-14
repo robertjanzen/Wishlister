@@ -21,6 +21,7 @@ beforeAll(() => {
     return steam.steam(590380).then((result) => {
         steam_object = result;
     }).then((result) => {
+
         mock_steam_obj =
         {
             "name": "Into the Breach",
@@ -31,14 +32,6 @@ beforeAll(() => {
             "header_image": "https://steamcdn-a.akamaihd.net/steam/apps/590380/header.jpg?t=1519989363",
             "steam_appid": 590380
         }
-    }).then((tyler) => {
-      return sql.check_email_existence('test@test.com', 'userEmail').then((validEmail) => {
-        validEmailTest = validEmail;
-      }).then((tyler) => {
-      return sql.get_uid_from_email('test@test.com').then((userID) => {
-        userIDTest = userID;
-      })
-    })
 
         mock_gog_obj_1 =
         {
@@ -128,18 +121,9 @@ beforeAll(() => {
                 discount_percent: 0,
             },
             name: "The Witcher: Enhanced Edition"
-        };
+        }
 
         mock_gog_game_list = [mock_gog_obj_1, mock_gog_obj_2]
-
-    }).then((tyler) => {
-      return sql.check_email_existence('test@test.com', 'userEmail').then((validEmail) => {
-        validEmailTest = validEmail;
-      }).then((tyler) => {
-          return sql.get_uid_from_email('test@test.com').then((userID) => {
-              userIDTest = userID;
-          })
-      })
     })
 })
 
@@ -161,43 +145,55 @@ afterAll(() => {
 })
 
 describe("Steam Tests", () => {
-  test("Receive JSON object from Steam API", () => {
-      expect(steam_object.type).
-      toBe("game")
-  }),
-  test("Process steam object - Game Title", () => {
-      expect(steam.process_object(mock_steam_obj)[0]).
-      toBe("Into the Breach")
-  }),
-  test("Calculte steam app price", () => {
-    expect(steam.calculate_price(10020, 50)).
-    toBe("50.10")
-  })
+    test("Receive JSON object from Steam API", () => {
+        expect(steam_object.type).
+        toBe("game")
+    }),
+    test("Process steam object - Game Title", () => {
+        expect(steam.process_object(mock_steam_obj)[0]).
+        toBe("Into the Breach")
+    }),
+    test("Calculte steam app price", () => {
+        expect(steam.calculate_price(10020, 50)).
+        toBe("50.10")
+    })
 })
 
-// describe('SQL DB Tests', () => {
-//
-//     // test("Add user into database", () => {
-//     //     expect(sql.insert_user())
-//     // })
-//
-//     // test("Insert into wishlist", () => {
-//     //     expect(sql.insert_wishlist())
-//     // })
-//
-//     // test("Fetch wishlist", () => {
-//     //     expect(sql.fetch_wishlist().appid).
-//     //     toBe(376520)
-//     // })
-// })
-
-describe('Tyler SQL_db Tests', () => {
-  test('Check if email is in database', () => {
-    expect(validEmailTest).toBe(true)
-  })
-  test('Fetch uid from input email', () => {
-    expect(userIDTest).toBe(63)
-  })
+describe('SQL DB Tests', () => {
+    test("Add user into database", () => {
+        expect(sql.insert_user('TestUser', '$2a$10$QQtyTFzmeCAYhwdMd/nnQeUbGf1TJ7kNHELHRRNMHzlFvLLB55q2O', 'testuser@gmail.com')).
+        toBeTruthy()
+    }),
+    test("Get UID from email", () => {
+        return sql.get_uid_from_email('testuser@gmail.com').then((result) => {
+            expect(result).
+            toBeGreaterThan(0)
+        })
+    }),
+    test("Insert into wishlist", () => {
+        return  sql.get_uid_from_email('testuser@gmail.com').then((uid) => {
+            sql.insert_wishlist(uid, '376520').then((result) => {
+                expect(result.affectedRows).
+                toBe(1)
+            })
+        })
+    }),
+    test("Fetch wishlist", () => {
+        return  sql.get_uid_from_email('testuser@gmail.com').then((uid) => {
+            sql.fetch_wishlist(uid).then((result) => {
+                expect(result[0].appid).
+                toBe(376520)
+            })
+        })
+    }),
+    test("Delete from wishlist", () => {
+        return sql.get_uid_from_email('testuser@gmail.com').then((uid) => {
+            sql.delete_from_wishlist(uid, '376520').then((result) => {
+                expect(result.affectedRows).
+                toBe(1)
+            })
+        })
+    })
 })
 
 describe('GOG Tests', () => {
@@ -241,12 +237,3 @@ describe('GOG Tests', () => {
         toBe("gog")
     })
 })
-
-var initial_price = parseInt(steam_result.price_overview.initial);
-var disct_percentage = parseInt(steam_result.price_overview.discount_percent);
-var current_price = calculate_price(initial_price, disct_percentage);
-var steam_name = `${steam_result.name}`;
-var steam_price = `Current Price: $${current_price.toString()}`;
-var steam_discount = `Discount ${disct_percentage}%`;
-var steam_thumb = `<img class=\"wishThumb shadow\" src=\"${steam_result.header_image}\" />`;
-var app_id = steam_result.steam_appid;
