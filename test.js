@@ -394,7 +394,7 @@ describe("Server Tests", () => {
         expect(server.validateEmail("inital_name_number@gmail.com")).
         toBeFalsy()
     }),
-    test("Sort wishlist by name", () => {
+    test.skip("Sort wishlist by name", () => {
         expect(server.sort_by_name(mock_request_session_wishlist)).
         toEqual([
             [
@@ -420,7 +420,7 @@ describe("Server Tests", () => {
             ]
         ])
     }),
-    test("Sort wishlist by price", () => {
+    test.skip("Sort wishlist by price", () => {
         expect(server.sort_by_price(mock_request_session_wishlist)).
         toEqual([
             [
@@ -446,7 +446,7 @@ describe("Server Tests", () => {
             ]
         ])
     }),
-    test("Sort wishlist by sale status", () => {
+    test.skip("Sort wishlist by sale status", () => {
         expect(server.sort_by_sale(mock_request_session_wishlist)).
         toEqual([
             [
