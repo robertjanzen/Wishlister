@@ -8,11 +8,17 @@ const subsearch = require('subsequence-search');
 const bcrypt = require('bcrypt');
 const serverPort = 8080;
 var math = require('mathjs');
+var path = require('path');
+// var hbsExpress = require('express-handlebars');
+var hbsMailer = require('nodemailer-express-handlebars')
+var nodemailer = require('nodemailer');
 
 /**
  * constant for password hash algorithm
  */
 const saltRounds = 10;
+
+const server_function = require('./server_function.js')
 
 //Contains all functions that uses the steam api, namely steam and game_loop
 const steam_function = require('./steam.js');
@@ -105,7 +111,7 @@ app.get('/', (request, response) => {
 
     }).catch((error) => {
 
-        serverError(response, error);
+        server_function.serverError(response, error);
 
     });
 
@@ -132,7 +138,7 @@ app.post('/', (request, response) => {
             steam_function.steam(appid).then((result) => {
                 var initial_price = parseInt(result.price_overview.initial);
                 var disct_percentage = parseInt(result.price_overview.discount_percent);
-                var current_price = `$${get_final_price(initial_price, disct_percentage)}`;
+                var current_price = `$${server_function.get_final_price(initial_price, disct_percentage)}`;
 
                 response.render('index.hbs', {
                     gameList: request.session.wishlist,
@@ -159,7 +165,7 @@ app.post('/', (request, response) => {
             var gameList = [];
             var maxItem = result.data.length;
 
-            maxItem = set_max_items(maxItem);
+            maxItem = server_function.set_max_items(maxItem);
             for (i = 0; i < maxItem; i++) {
                 var gameName = result.data[i].name;
                 gameList.push(gameName);
@@ -197,7 +203,7 @@ app.get('/fetchDetails', (request, response) => {
 
             var initial_price = parseInt(result.price_overview.initial);
             var disct_percentage = parseInt(result.price_overview.discount_percent);
-            var final_price = get_final_price(initial_price, disct_percentage);
+            var final_price = server_function.get_final_price(initial_price, disct_percentage);
 
             var current_price = `$${final_price}`;
 
@@ -229,7 +235,7 @@ app.post('/loginAuth', (request, response) => {
 
     // var query = `SELECT * FROM users WHERE username = '${input_name}'`;
 
-    var empty_field = check_for_empty_fields(input_name, input_pass);
+    var empty_field = server_function.check_for_empty_fields(input_name, input_pass);
 
     sql_db_function.fetch_user_detail(input_name).then((result) => {
       if (result.length != 1) {
@@ -266,7 +272,7 @@ app.post('/loginAuth', (request, response) => {
                   });
 
                 }).catch((error) => {
-                    serverError(response, error);
+                    server_function.serverError(response, error);
                 });
 
             } else {
@@ -279,11 +285,11 @@ app.post('/loginAuth', (request, response) => {
                 });
             }
         }).catch((error) => {
-            serverError(response, error);
+            server_function.serverError(response, error);
         });
       }
     }).catch((error) => {
-      serverError(response, error);
+      server_function.serverError(response, error);
     })
 });
 
@@ -318,7 +324,7 @@ app.get('/removeFromWishlist', (request, response) => {
             details: 'Game Search'
         });
     }).catch((error) => {
-          serverError(response, error);
+          server_function.serverError(response, error);
     });
 });
 
@@ -351,13 +357,13 @@ app.post('/createUser', (request, response) => {
     var input_user_name = request.body.acc_name;
     var input_user_pass = request.body.acc_pass;
     var input_dupe_pass = request.body.rpt_pass;
-    var weak_pass = check_password_length(input_user_pass);
-    var short_name = check_username_length(input_user_name);
-    var pass_space = check_password_spaces(input_user_pass);
-    var containsSpace = check_username_spaces(input_user_name);
-    var pw_mismatch = check_matching_passwords(input_user_pass, input_dupe_pass);
+    var weak_pass = server_function.check_password_length(input_user_pass);
+    var short_name = server_function.check_username_length(input_user_name);
+    var pass_space = server_function.check_password_spaces(input_user_pass);
+    var containsSpace = server_function.check_username_spaces(input_user_name);
+    var pw_mismatch = server_function.check_matching_passwords(input_user_pass, input_dupe_pass);
     var resultName = 'numName';
-    var invalidEmail = validateEmail(input_user_email);
+    var invalidEmail = server_function.validateEmail(input_user_email);
     var emailName = 'emailName';
     var emailDBStatus = 'temp';
     var result = 'temp';
@@ -392,14 +398,14 @@ app.post('/createUser', (request, response) => {
 
               }
             }).catch((error) => {
-                serverError(response, error);
+                server_function.serverError(response, error);
             });
         }
     }).catch((error) => {
-        serverError(response, error);
+        server_function.serverError(response, error);
     });
   }).catch((error) => {
-      serverError(response, error);
+      server_function.serverError(response, error);
   });
 })
 
@@ -426,7 +432,7 @@ app.post('/addToWishlist', (request, response) => {
               sql_db_function.insert_wishlist(request.session.uid, request.session.appid).then((result) => {
                 // Step 3 - Get all their games from the database, and update the wishlist
               }).catch((error) => {
-                serverError(response, error);
+                server_function.serverError(response, error);
               });
           }
 
@@ -443,7 +449,7 @@ app.post('/addToWishlist', (request, response) => {
                 details: 'Game Search'
             });
           }).catch((error) => {
-              serverError(response, error);
+              server_function.serverError(response, error);
           });
         });
       }
@@ -457,7 +463,7 @@ app.post('/passwordRecovery', (request, response) => {
 
     var recovery_email = request.body.rec_email;
     var resultEmail = 'boolMatch';
-    var invalidEmail = validateEmail(recovery_email, resultEmail);
+    var invalidEmail = server_function.validateEmail(recovery_email, resultEmail);
     var token = 'token';
     var uid = 'uid';
 
@@ -468,32 +474,51 @@ app.post('/passwordRecovery', (request, response) => {
         // get uid from email
             sql_db_function.get_uid_from_email(recovery_email).then((resultingUID) => {
                 return resultingUID;
-            }).then((uid) => {
+            }).then((uidResult) => {
               //generate token
               var num = (Math.random()*100000)+(Math.random()*100000000000000000);
               var token = num.toString('16');
               token = token + token + token;
               token = token.split('').sort(function(){return 0.5-Math.random()}).join('');
-              uid = uid;
+              uid = uidResult[0];
+              userName = uidResult[1];
 
         // updating db with token
         sql_db_function.update_token(uid, token).then((uid) => {
 
               //sending the email
-      var nodemailer = require('nodemailer');
+
+      var email = 'wishlisterhelp@gmail.com',
+      pass = 'Pa$$word123';
+
       var transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-          user: 'wishlisterhelp@gmail.com',
-          pass: 'Pa$$word123'
+          user: email,
+          pass: pass
         }
       });
+
+      var handlebarsOptions = {
+            viewEngine: 'handlebars',
+            viewPath: path.resolve('./email_templates/'),
+            extName: '.html'
+            };
+
+      transporter.use('compile', hbsMailer(handlebarsOptions));
+
       var mailOptions = {
-        from: 'wishlisterhelp@gmail.com',
+        from: email,
         to: recovery_email,
+        template: 'reset-password-email',
         subject: 'Password Recovery for Wishlister',
-        text: 'http://localhost:8080/passwordRecoveryEntry?id='+uid+'?token='+token
+        context: {
+          url: 'http://localhost:8080/passwordRecoveryEntry?id='+uid+'?token='+token,
+          name: userName
+        }
       };
+
+      /// add username to uid get function and add it to email
 
       transporter.sendMail(mailOptions, function(error, info){
         if (error) {
@@ -510,10 +535,10 @@ app.post('/passwordRecovery', (request, response) => {
         }
       });
     }).catch((error) => {
-        serverError(response, error);
+        server_function.serverError(response, error);
     });
   }).catch((error) => {
-      serverError(response, error);
+      server_function.serverError(response, error);
   });
       }
       else {
@@ -537,6 +562,7 @@ app.post('/passwordRecoveryChange', (request, response) => {
       linked = linked.split('?token=');
       uid = linked[0];
       token = linked[1];
+
   }
 
 
@@ -553,13 +579,51 @@ app.post('/passwordRecoveryChange', (request, response) => {
       return sql_db_function.update_password(uid, hash);
   }).then((result)=>{
     if(result){
+      var userInfo = result;
       response.render('passwordRecovered.hbs', {
           noLogIn: true
       });
 
+
+      var email = 'wishlisterhelp@gmail.com',
+      pass = 'Pa$$word123';
+
+      var transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: email,
+          pass: pass
+        }
+      });
+
+      var handlebarsOptions = {
+            viewEngine: 'handlebars',
+            viewPath: path.resolve('./email_templates/'),
+            extName: '.html'
+            };
+
+      transporter.use('compile', hbsMailer(handlebarsOptions));
+
+        var mailOptions = {
+          from: email,
+          to: userInfo[0].email,
+          template: 'reset-password-confirmation',
+          subject: 'Password for Wishlister Changed',
+          context: {
+            name: userInfo[0].username
+          }
+        };
+
+        /// add username to uid get function and add it to email
+
+        transporter.sendMail(mailOptions, function(error, info){
+          if (error) {
+            console.log(error);
     }
+});
+}
       }).catch((error) => {
-        serverError(response, error);
+        server_function.serverError(response, error);
       });
     }
 
@@ -567,9 +631,11 @@ app.post('/passwordRecoveryChange', (request, response) => {
       response.render('passwordRecoveryEntry.hbs', {
           tokenInvalid: true
       });
+
+
     }
   }).catch((error) => {
-    serverError(response, error);
+    server_function.serverError(response, error);
 });
 });
 
@@ -585,57 +651,63 @@ app.listen(8080, () => {
 });
 
 // Handle server errors and render 500 error page
-var serverError = (response, errorMsg) => {
-    console.log(errorMsg);
-    response.status(500);
-    response.render('500.hbs');
-    return "Done";
-}
-
-var check_username_length = (input_user_name) => {
-  return (input_user_name.length < 6);
-}
-
-var check_username_spaces = (input_user_name) => {
-  return (input_user_name.indexOf(" ") != -1)
-}
-
-var check_password_length = (input_user_pass) => {
-  return input_user_pass.length < 8;
-}
-
-var check_password_spaces = (input_user_pass) => {
-  return input_user_pass.indexOf(" ") != -1;
-}
-
-var check_matching_passwords = (password_1, password_2) => {
-  return password_1 != password_2;
-}
-
-var check_for_empty_fields = (input_name, input_pass) => {
-  return (input_name == '' || input_pass == '');
-}
-
-var get_final_price = (initial_price, disct_percentage) => {
-  return (initial_price * (1 - (disct_percentage / 100)) / 100).toFixed(2).toString();
-}
-
-var set_max_items = (item_count) => {
-  return_count = item_count;
-  if(return_count > 10){
-    return_count = 10;
-  }
-  return return_count;
-}
-
-// validate email
-
-var validateEmail = (email) => {
-  var valid = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
-  error = !valid.test(email);
-  return error;
-}
-
-module.exports = {
-
-}
+// var server_function.serverError = (response, errorMsg) => {
+//     if (response == undefined){
+//         return false
+//     } else {
+//         console.log(errorMsg);
+//         response.status(500);
+//         response.render('500.hbs');
+//         return true
+//     }
+// }
+//
+// var server_function.check_username_length = (input_user_name) => {
+//   return (input_user_name.length < 6);
+// }
+//
+// var server_function.check_username_spaces = (input_user_name) => {
+//   return (input_user_name.indexOf(" ") != -1)
+// }
+//
+// var server_function.check_password_length = (input_user_pass) => {
+//   return input_user_pass.length < 8;
+// }
+//
+// var server_function.check_password_spaces = (input_user_pass) => {
+//   return input_user_pass.indexOf(" ") != -1;
+// }
+//
+// var server_function.check_matching_passwords = (password_1, password_2) => {
+//   return password_1 != password_2;
+// }
+//
+// var server_function.check_for_empty_fields = (input_name, input_pass) => {
+//   return (input_name == '' || input_pass == '');
+// }
+//
+// var server_function.get_final_price = (initial_price, disct_percentage) => {
+//   return (initial_price * (1 - (disct_percentage / 100)) / 100).toFixed(2).toString();
+// }
+//
+// var server_function.set_max_items = (item_count) => {
+//   return_count = item_count;
+//   if(return_count > 10){
+//     return_count = 10;
+//   }
+//   return return_count;
+// }
+//
+// // validate email
+//
+// var server_function.validateEmail = (email) => {
+//   var valid = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+//   error = !valid.test(email);
+//   return error;
+// }
+//
+// module.exports = {
+//     server_function.serverError, server_function.check_username_length, server_function.check_username_spaces,
+//     server_function.check_password_length, server_function.check_password_spaces, server_function.check_matching_passwords,
+//     server_function.check_for_empty_fields, server_function.get_final_price, server_function.set_max_items, server_function.validateEmail
+// }
