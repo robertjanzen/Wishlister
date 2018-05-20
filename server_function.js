@@ -1,5 +1,12 @@
 const _ = require('lodash');
 
+/**
+ * Checks for server error displays a message and returns a boolean value
+ * @alias module:./server_function.serverError
+ * @param response
+ * @param errorMsg
+ * @returns {boolean} 
+ */
 var serverError = (response, errorMsg) => {
     if (response == undefined) {
         return false
