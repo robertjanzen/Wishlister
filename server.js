@@ -22,6 +22,7 @@ const hbsMailer = require('nodemailer-express-handlebars')
 const nodemailer = require('nodemailer');
 
 
+
 /**
  * constant for password hash algorithm
  */
@@ -141,12 +142,18 @@ app.get('/', (request, response) => {
  * @route {POST} /
  */
 app.post('/', (request, response) => {
-  if(request.body.sort_value == undefined) {
-    request.session.sort = 'name'
-  }else {
-    request.session.sort = request.body.sort_value
-  }
-    if (request.body.game == '' | request.body.game == undefined) {
+    var target_game_name = request.body.game;
+    if(request.body.sort_value==undefined){
+        if(request.session.sort==undefined){
+            request.session.sort = "name"
+        }
+    }else {
+        request.session.sort = request.body.sort_value;
+        target_game_name = request.session.fetchedGame;
+
+    }
+    if (target_game_name == '' | target_game_name == undefined) {
+        request.session.fetchedGame = undefined;
         response.render('index.hbs', {
             gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
             year: new Date().getFullYear(),
@@ -155,7 +162,7 @@ app.post('/', (request, response) => {
         })
     } else {
         var index = _.findIndex(gameobj['applist'].apps, function(o) {
-            return o.name == request.body.game;
+            return o.name == target_game_name;
         });
 
         if (index != -1) {
@@ -165,6 +172,7 @@ app.post('/', (request, response) => {
                 var initial_price = parseInt(result.price_overview.initial);
                 var disct_percentage = parseInt(result.price_overview.discount_percent);
                 var current_price = `$${server_function.get_final_price(initial_price, disct_percentage)}`;
+                request.session.fetchedGame = result.name;
                 response.render('index.hbs', {
                     gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
                     year: new Date().getFullYear(),
@@ -219,10 +227,12 @@ app.post('/', (request, response) => {
  * @route {GET} /fetchDetails
  */
 app.get('/fetchDetails', (request, response) => {
-    if(request.body.sort_value == undefined) {
-      request.session.sort = 'name'
+    if(request.body.sort_value==undefined){
+        if(request.session.sort==undefined){
+            request.session.sort = "name"
+        }
     }else {
-      request.session.sort = request.body.sort_value
+        request.session.sort = request.body.sort_value
     }
     var index = _.findIndex(gameobj['applist'].apps, function(o) {
         return o.name == request.query.n;
@@ -236,7 +246,7 @@ app.get('/fetchDetails', (request, response) => {
                 var final_price = server_function.get_final_price(initial_price, disct_percentage);
                 var current_price = `$${final_price}`;
                 var store_logo = `${result.store}_logo.png`;
-
+                request.session.fetchedGame = result.name;
                 response.render('index.hbs', {
                         gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
                         year: new Date().getFullYear(),
@@ -257,6 +267,9 @@ app.get('/fetchDetails', (request, response) => {
     }
 });
 
+
+
+
 /**
  * Authorize users through the login panel on the home page. Passwords are
  * hashed and stored in teh MySQL database
@@ -273,12 +286,16 @@ app.post('/loginAuth', (request, response) => {
     // var query = `SELECT * FROM users WHERE username = '${input_name}'`;
 
 
-    if(request.body.sort_value == undefined) {
-      request.session.sort = 'name'
-    }else {
-      request.session.sort = request.body.sort_value
-    }
 
+    request.session.sort = 'sale'
+
+    if(request.body.sort_value==undefined){
+        if(request.session.sort==undefined){
+            request.session.sort = "name"
+        }
+    }else {
+        request.session.sort = request.body.sort_value
+    }
     var empty_field = server_function.check_for_empty_fields(input_name, input_pass);
 
     if(request.body['g-recaptcha-response'] === undefined || request.body['g-recaptcha-response'] === '' || request.body['g-recaptcha-response'] === null) {
