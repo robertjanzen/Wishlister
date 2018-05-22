@@ -154,11 +154,13 @@ app.post('/', (request, response) => {
     }
     if (target_game_name == '' | target_game_name == undefined) {
         request.session.fetchedGame = undefined;
+        var test = request.session.sort;
         response.render('index.hbs', {
             gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
             year: new Date().getFullYear(),
             loggedIn: request.session.loggedIn,
-            userName: request.session.userName
+            userName: request.session.userName,
+            details: 'Game Search'
         })
     } else {
         var index = _.findIndex(gameobj['applist'].apps, function(o) {
@@ -168,10 +170,11 @@ app.post('/', (request, response) => {
         if (index != -1) {
             var appid = gameobj['applist'].apps[index].appid.toString();
             request.session.appid = appid;
-            steam_function.steam(appid).then((result) => {
-                var initial_price = parseInt(result.price_overview.initial);
-                var disct_percentage = parseInt(result.price_overview.discount_percent);
+            steam_function.get_game_object(appid).then((result) => {
+                var initial_price = parseInt(result.initial);
+                var disct_percentage = parseInt(result.discount_percent);
                 var current_price = `$${server_function.get_final_price(initial_price, disct_percentage)}`;
+                var store_logo = `${result.store}_logo.png`;
                 request.session.fetchedGame = result.name;
                 response.render('index.hbs', {
                     gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
@@ -182,7 +185,8 @@ app.post('/', (request, response) => {
                     price: `Current Price: ${current_price}`,
                     discount: `Discount ${disct_percentage}%`,
                     displayDetails: true,
-                    gameThumb: `<img id=\"gameThumb\" class=\"shadow\" src=\"${result.header_image}\" />`,
+                    gameThumb: `<img id=\"gameThumb\" class=\"shadow\" src=\"${result.steam_thumb}\" />`,
+                    store: `<img class='wishlistlogo' src='${store_logo}'></img>`,
                     details: 'Game Details'
                 });
             }).catch((error) => {
@@ -285,9 +289,9 @@ app.post('/loginAuth', (request, response) => {
 
     // var query = `SELECT * FROM users WHERE username = '${input_name}'`;
 
-
-
     request.session.sort = 'sale'
+
+
 
     if(request.body.sort_value==undefined){
         if(request.session.sort==undefined){
