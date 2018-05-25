@@ -195,7 +195,7 @@ app.post('/', (request, response) => {
             var result = subsearch.search({
                 rank: subsearch.transforms.rank('name'),
                 noHighlight: subsearch.transforms.noHighlight,
-            }, dataList, request.body.game);
+            }, dataList, target_game_name);
             var gameList = [];
             var maxItem = result.data.length;
 
@@ -421,6 +421,7 @@ app.get('/removeFromWishlist', (request, response) => {
         return steam_function.game_loop(queryResult);
     }).then((result) => {
         request.session.wishlist = result;
+        request.session.fetchedGame = undefined;
         response.render('index.hbs', {
             gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
             year: new Date().getFullYear(),
@@ -563,7 +564,7 @@ app.post('/addToWishlist', (request, response) => {
                 return steam_function.game_loop(queryResult);
             }).then((result) => {
                 request.session.wishlist = result;
-
+                request.session.fetchedGame = undefined;
                 response.render('index.hbs', {
                     gameList: server_function.sort_wishlist(request.session.sort, request.session.wishlist),
                     year: new Date().getFullYear(),
@@ -777,5 +778,5 @@ app.use((request, response) => {
  * Listen on port 8080
  */
 app.listen((process.env.PORT || 8080), () => {
-    console.log(`Server is up on the port ${serverPort}`);
+    console.log(`Server is up on the port ${process.env.PORT || 8080}`);
 });
